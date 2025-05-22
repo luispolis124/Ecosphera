@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ecosphera: Vida em Evolução</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1e2e;
+      color: #e0f7fa;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #1e2e3f;
+      padding: 1em;
+      text-align: center;
+      font-size: 1.5em;
+      border-bottom: 2px solid #00acc1;
+    }
+
+    .clock {
+      text-align: center;
+      margin: 1em;
+      font-size: 1.2em;
+      color: #b2ebf2;
+    }
+
+    .container {
+      display: flex;
+      gap: 2em;
+      padding: 2em;
+      flex-wrap: wrap;
+    }
+
+    .species-panel, .new-species {
+      background: #263238;
+      padding: 1em;
+      border-radius: 10px;
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .species {
+      margin-bottom: 1em;
+      padding: 0.5em;
+      border-left: 4px solid #00acc1;
+      background: #37474f;
+      border-radius: 6px;
+    }
+
+    label, input, select {
+      display: block;
+      margin-top: 0.5em;
+    }
+
+    input, select {
+      padding: 0.4em;
+      width: 100%;
+      background: #455a64;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+    }
+
+    button {
+      margin-top: 1em;
+      padding: 0.6em;
+      background: #00acc1;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #00838f;
+    }
+  </style>
+</head>
+<body>
+  <header>🧬 Ecosphera: Vida em Evolução</header>
+
+  <div class="clock">🕒 Hora Simulada: <span id="clock">00:00</span></div>
+
+  <div class="container">
+    <div class="species-panel">
+      <h2>Espécies Registradas</h2>
+      <div id="speciesList"></div>
+    </div>
+
+    <div class="new-species">
+      <h2>Nova Espécie</h2>
+      <label>Nome Comum</label>
+      <input type="text" id="nomeComum" placeholder="Ex: Dragão Azul" />
+
+      <label>Nome Científico</label>
+      <input type="text" id="nomeCientifico" placeholder="Ex: Draco azureus" />
+
+      <label>Classificação (Classe)</label>
+      <input type="text" id="classificacao" placeholder="Ex: Reptilia" />
+
+      <label>População Estimada</label>
+      <input type="number" id="populacao" value="1000" />
+
+      <label>Status IUCN</label>
+      <select id="iucn">
+        <option value="LC">Pouco Preocupante (LC)</option>
+        <option value="NT">Quase Ameaçado (NT)</option>
+        <option value="VU">Vulnerável (VU)</option>
+        <option value="EN">Em Perigo (EN)</option>
+        <option value="CR">Criticamente em Perigo (CR)</option>
+        <option value="EW">Extinto na Natureza (EW)</option>
+        <option value="EX">Extinto (EX)</option>
+      </select>
+
+      <button onclick="adicionarEspecie()">Adicionar Espécie</button>
+    </div>
+  </div>
+
+  <script>
+    const nomesComunsFicticios = [
+      "Fênix Brilhante", "Lagarto Espiral", "Rinoceronte Fantasma",
+      "Galo Solar", "Tigre de Névoa", "Macaco das Sombras"
+    ];
+
+    const nomesCientificosFicticios = [
+      "Phenix luminis", "Lacerta vortex", "Rhinoceros phasma",
+      "Gallus solarius", "Panthera nebulosa", "Simia umbra"
+    ];
+
+    const classificacoes = ["Mammalia", "Aves", "Reptilia", "Amphibia", "Insecta", "Pisces"];
+
+    let especies = JSON.parse(localStorage.getItem("especies")) || [];
+    let hora = 0;
+    let minuto = 0;
+    let rodando = true;
+
+    function atualizarRelogio() {
+      if (!rodando) return;
+      minuto += 15;
+      if (minuto >= 60) {
+        minuto = 0;
+        hora++;
+      }
+      if (hora >= 24) hora = 0;
+
+      const h = hora.toString().padStart(2, "0");
+      const m = minuto.toString().padStart(2, "0");
+      document.getElementById("clock").textContent = `${h}:${m}`;
+    }
+
+    function salvarEspecies() {
+      localStorage.setItem("especies", JSON.stringify(especies));
+    }
+
+    function adicionarEspecie() {
+      const nomeComum = document.getElementById("nomeComum").value.trim();
+      const nomeCientifico = document.getElementById("nomeCientifico").value.trim();
+      const classificacao = document.getElementById("classificacao").value.trim();
+      const populacao = parseInt(document.getElementById("populacao").value);
+      const iucn = document.getElementById("iucn").value;
+
+      if (!nomeComum || !nomeCientifico || !classificacao || isNaN(populacao)) {
+        alert("Por favor, preencha todos os campos corretamente.");
+        return;
+      }
+
+      const especie = { nomeComum, nomeCientifico, classificacao, populacao, iucn };
+      especies.push(especie);
+      salvarEspecies();
+      renderizarEspecies();
+    }
+
+    function atualizarPopulacoes() {
+      if (!rodando) return;
+      especies.forEach((esp) => {
+        if (esp.iucn === "EX" || esp.populacao <= 0) {
+          esp.populacao = 0;
+          esp.iucn = "EX";
+          return;
+        }
+
+        let variacao = Math.floor(Math.random() * 101) - 50;
+        const fator = {
+          LC: 1.2, NT: 1.0, VU: 0.8, EN: 0.6,
+          CR: 0.3, EW: 0.1, EX: 0
+        };
+
+        esp.populacao += Math.floor(variacao * fator[esp.iucn]);
+        if (esp.populacao < 0) esp.populacao = 0;
+        if (esp.populacao === 0) esp.iucn = "EX";
+      });
+
+      salvarEspecies();
+      renderizarEspecies();
+    }
+
+    function npcCriaEspecie() {
+      if (!rodando) return;
+      if (Math.random() < 0.2) {
+        const nomesDisponiveis = nomesComunsFicticios.filter(nc => !especies.some(e => e.nomeComum === nc));
+        const cientificosDisponiveis = nomesCientificosFicticios.filter(ns => !especies.some(e => e.nomeCientifico === ns));
+        if (nomesDisponiveis.length === 0 || cientificosDisponiveis.length === 0) return;
+
+        const nomeComum = nomesDisponiveis[Math.floor(Math.random() * nomesDisponiveis.length)];
+        const nomeCientifico = cientificosDisponiveis[Math.floor(Math.random() * cientificosDisponiveis.length)];
+        const classificacao = classificacoes[Math.floor(Math.random() * classificacoes.length)];
+        const populacao = Math.floor(Math.random() * 5000) + 500;
+        const statusIUCN = ["LC", "NT", "VU", "EN", "CR"][Math.floor(Math.random() * 5)];
+
+        const especie = { nomeComum, nomeCientifico, classificacao, populacao, iucn: statusIUCN };
+        especies.push(especie);
+        salvarEspecies();
+        renderizarEspecies();
+        console.log("NPC criou nova espécie:", nomeComum);
+      }
+    }
+
+    function corStatus(status) {
+      return {
+        LC: "#4caf50", NT: "#cddc39", VU: "#ffc107",
+        EN: "#ff9800", CR: "#f44336", EW: "#9e9e9e", EX: "#000000"
+      }[status] || "#ffffff";
+    }
+
+    function renderizarEspecies() {
+      const lista = document.getElementById("speciesList");
+      lista.innerHTML = "";
+      especies.forEach((esp) => {
+        const div = document.createElement("div");
+        div.className = "species";
+        div.style.borderLeftColor = corStatus(esp.iucn);
+        div.innerHTML = `
+          <strong>${esp.nomeComum}</strong> (<em>${esp.nomeCientifico}</em>)<br/>
+          Classe: ${esp.classificacao}<br/>
+          População: ${esp.populacao}<br/>
+          Status IUCN: <span style="color:${corStatus(esp.iucn)}">${esp.iucn}</span>
+        `;
+        lista.appendChild(div);
+      });
+    }
+
+    // Inicialização
+    renderizarEspecies();
+
+    // Relógio e População (a cada 2 segundos)
+    setInterval(() => {
+      atualizarRelogio();
+      atualizarPopulacoes();
+    }, 2000);
+
+    // NPC criando espécies aleatórias (a cada 4 segundos)
+    setInterval(() => {
+      npcCriaEspecie();
+    }, 4000);
+  </script>
+</body>
+</html>
