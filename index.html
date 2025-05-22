@@ -121,39 +121,26 @@
   </div>
 
   <script>
-    const nomesComunsFicticios = [
-      "Fênix Brilhante", "Lagarto Espiral", "Rinoceronte Fantasma",
-      "Galo Solar", "Tigre de Névoa", "Macaco das Sombras"
-    ];
-
-    const nomesCientificosFicticios = [
-      "Phenix luminis", "Lacerta vortex", "Rhinoceros phasma",
-      "Gallus solarius", "Panthera nebulosa", "Simia umbra"
-    ];
-
-    const classificacoes = ["Mammalia", "Aves", "Reptilia", "Amphibia", "Insecta", "Pisces"];
-
     let especies = JSON.parse(localStorage.getItem("especies")) || [];
-    let hora = 0;
-    let minuto = 0;
-    let rodando = true;
-
-    function atualizarRelogio() {
-      if (!rodando) return;
-      minuto += 15;
-      if (minuto >= 60) {
-        minuto = 0;
-        hora++;
-      }
-      if (hora >= 24) hora = 0;
-
-      const h = hora.toString().padStart(2, "0");
-      const m = minuto.toString().padStart(2, "0");
-      document.getElementById("clock").textContent = `${h}:${m}`;
-    }
 
     function salvarEspecies() {
       localStorage.setItem("especies", JSON.stringify(especies));
+    }
+
+    function renderizarEspecies() {
+      const lista = document.getElementById("speciesList");
+      lista.innerHTML = "";
+      especies.forEach((esp, index) => {
+        lista.innerHTML += `
+          <div class="species">
+            <strong>${esp.nomeComum}</strong><br/>
+            <em>${esp.nomeCientifico}</em><br/>
+            Classe: ${esp.classificacao}<br/>
+            População: ${esp.populacao}<br/>
+            Status: ${esp.iucn}
+          </div>
+        `;
+      });
     }
 
     function adicionarEspecie() {
@@ -168,94 +155,55 @@
         return;
       }
 
+      // Verificação 1: Nome científico já existe
+      const especieComMesmoNome = especies.find(e => e.nomeCientifico === nomeCientifico);
+      if (especieComMesmoNome) {
+        alert("Essa espécie já está cadastrada com esse nome científico!");
+        return;
+      }
+
+      // Verificação 2: Nome científico + classificação já existe
+      const especieComMesmoNomeEClasse = especies.find(e =>
+        e.nomeCientifico === nomeCientifico && e.classificacao === classificacao
+      );
+      if (especieComMesmoNomeEClasse) {
+        alert("Essa espécie com essa classificação já existe!");
+        return;
+      }
+
       const especie = { nomeComum, nomeCientifico, classificacao, populacao, iucn };
       especies.push(especie);
       salvarEspecies();
       renderizarEspecies();
+
+      // Limpa os campos após adicionar
+      document.getElementById("nomeComum").value = "";
+      document.getElementById("nomeCientifico").value = "";
+      document.getElementById("classificacao").value = "";
+      document.getElementById("populacao").value = 1000;
+      document.getElementById("iucn").value = "LC";
     }
 
-    function atualizarPopulacoes() {
+    // Relógio Simulado
+    let hora = 0;
+    let minuto = 0;
+    let rodando = true;
+    function atualizarRelogio() {
       if (!rodando) return;
-      especies.forEach((esp) => {
-        if (esp.iucn === "EX" || esp.populacao <= 0) {
-          esp.populacao = 0;
-          esp.iucn = "EX";
-          return;
-        }
-
-        let variacao = Math.floor(Math.random() * 101) - 50;
-        const fator = {
-          LC: 1.2, NT: 1.0, VU: 0.8, EN: 0.6,
-          CR: 0.3, EW: 0.1, EX: 0
-        };
-
-        esp.populacao += Math.floor(variacao * fator[esp.iucn]);
-        if (esp.populacao < 0) esp.populacao = 0;
-        if (esp.populacao === 0) esp.iucn = "EX";
-      });
-
-      salvarEspecies();
-      renderizarEspecies();
-    }
-
-    function npcCriaEspecie() {
-      if (!rodando) return;
-      if (Math.random() < 0.2) {
-        const nomesDisponiveis = nomesComunsFicticios.filter(nc => !especies.some(e => e.nomeComum === nc));
-        const cientificosDisponiveis = nomesCientificosFicticios.filter(ns => !especies.some(e => e.nomeCientifico === ns));
-        if (nomesDisponiveis.length === 0 || cientificosDisponiveis.length === 0) return;
-
-        const nomeComum = nomesDisponiveis[Math.floor(Math.random() * nomesDisponiveis.length)];
-        const nomeCientifico = cientificosDisponiveis[Math.floor(Math.random() * cientificosDisponiveis.length)];
-        const classificacao = classificacoes[Math.floor(Math.random() * classificacoes.length)];
-        const populacao = Math.floor(Math.random() * 5000) + 500;
-        const statusIUCN = ["LC", "NT", "VU", "EN", "CR"][Math.floor(Math.random() * 5)];
-
-        const especie = { nomeComum, nomeCientifico, classificacao, populacao, iucn: statusIUCN };
-        especies.push(especie);
-        salvarEspecies();
-        renderizarEspecies();
-        console.log("NPC criou nova espécie:", nomeComum);
+      minuto += 15;
+      if (minuto >= 60) {
+        minuto = 0;
+        hora++;
       }
+      if (hora >= 24) hora = 0;
+      const h = hora.toString().padStart(2, "0");
+      const m = minuto.toString().padStart(2, "0");
+      document.getElementById("clock").textContent = `${h}:${m}`;
     }
+    setInterval(atualizarRelogio, 1000);
 
-    function corStatus(status) {
-      return {
-        LC: "#4caf50", NT: "#cddc39", VU: "#ffc107",
-        EN: "#ff9800", CR: "#f44336", EW: "#9e9e9e", EX: "#000000"
-      }[status] || "#ffffff";
-    }
-
-    function renderizarEspecies() {
-      const lista = document.getElementById("speciesList");
-      lista.innerHTML = "";
-      especies.forEach((esp) => {
-        const div = document.createElement("div");
-        div.className = "species";
-        div.style.borderLeftColor = corStatus(esp.iucn);
-        div.innerHTML = `
-          <strong>${esp.nomeComum}</strong> (<em>${esp.nomeCientifico}</em>)<br/>
-          Classe: ${esp.classificacao}<br/>
-          População: ${esp.populacao}<br/>
-          Status IUCN: <span style="color:${corStatus(esp.iucn)}">${esp.iucn}</span>
-        `;
-        lista.appendChild(div);
-      });
-    }
-
-    // Inicialização
+    // Inicializa
     renderizarEspecies();
-
-    // Relógio e População (a cada 2 segundos)
-    setInterval(() => {
-      atualizarRelogio();
-      atualizarPopulacoes();
-    }, 2000);
-
-    // NPC criando espécies aleatórias (a cada 4 segundos)
-    setInterval(() => {
-      npcCriaEspecie();
-    }, 4000);
   </script>
 </body>
 </html>
